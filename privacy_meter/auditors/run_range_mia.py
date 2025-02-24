@@ -1,26 +1,35 @@
 """This file is the main entry point for running the privacy auditing tool."""
 
 import argparse
+import logging
 import math
+import pdb
 import time
 
+import numpy as np
 import torch
 import yaml
-import numpy as np
 from torch.utils.data import Subset
 
-from audit import get_average_audit_results, audit_models, sample_auditing_dataset
-from get_signals import get_model_signals
-from models.utils import load_models, train_models, split_dataset_for_training
-from util import (
+from privacy_meter.audit import (
+    get_average_audit_results,
+    audit_models_range,
+    sample_auditing_dataset,
+)
+from privacy_meter.dataset.range_dataset import RangeDataset, RangeSampler
+from privacy_meter.get_signals import get_model_signals
+from privacy_meter.models.utils import (
+    load_models,
+    train_models,
+    split_dataset_for_training,
+)
+from privacy_meter.util import (
     check_configs,
     setup_log,
     initialize_seeds,
     create_directories,
     load_dataset,
 )
-from modules.mia import MIA
-from modules.duci import DUCI
 
 # Enable benchmark mode in cudnn to improve performance when input sizes are consistent
 torch.backends.cudnn.benchmark = True
@@ -28,11 +37,11 @@ torch.backends.cudnn.benchmark = True
 
 def main():
     print(20 * "-")
-    print("Run Dataset Usage Cardinality Inference!")
+    print("Privacy Meter Tool!")
     print(20 * "-")
 
     # Parse arguments
-    parser = argparse.ArgumentParser(description="Run DUCI using Privacy Meter.")
+    parser = argparse.ArgumentParser(description="Run privacy auditing tool.")
     parser.add_argument(
         "--cf",
         type=str,
@@ -55,7 +64,7 @@ def main():
     log_dir = configs["run"]["log_dir"]
     directories = {
         "log_dir": log_dir,
-        "report_dir": f"{log_dir}/report",
+        "report_dir": f"{log_dir}/report_ramia",
         "signal_dir": f"{log_dir}/signals",
         "data_dir": configs["data"]["data_dir"],
     }
@@ -65,6 +74,7 @@ def main():
     logger = setup_log(
         directories["report_dir"], "time_analysis", configs["run"]["time_log"]
     )
+    logging.getLogger("transformers.modeling_utils").setLevel(logging.ERROR)
 
     start_time = time.time()
 
@@ -95,6 +105,19 @@ def main():
         "Model loading/training took %0.1f seconds", time.time() - baseline_time
     )
 
+    # Creating the range dataset
+    logger.info("Creating range dataset.")
+    dataset = RangeDataset(
+        dataset,
+        RangeSampler(
+            range_fn=configs["ramia"]["range_function"],
+            sample_size=configs["ramia"]["sample_size"],
+            config=configs,
+        ),
+        configs,
+    )
+
+    # Subsampling the dataset for auditing
     auditing_dataset, auditing_membership = sample_auditing_dataset(
         configs, dataset, logger, memberships
     )
@@ -108,81 +131,44 @@ def main():
         ),
     )
 
-    ############################ Generate signals (softmax outputs) for all models ############################
+    logger.info("Range dataset has been created")
+
+    # Generate signals (softmax outputs) for all models
     baseline_time = time.time()
-    signals = get_model_signals(
-        models_list, auditing_dataset, configs, logger
-    )  # num_samples * num_models
-    auditing_membership = auditing_membership.T
-    assert (
-        signals.shape == auditing_membership.shape
-    ), f"signals or auditing_membership has incorrect shape (num_samples * num_models): {signals.shape} vs {auditing_membership.shape}"
+    # pdb.set_trace()
+    signals = get_model_signals(models_list, auditing_dataset, configs, logger)
     population_signals = get_model_signals(
         models_list, population, configs, logger, is_population=True
     )
     logger.info("Preparing signals took %0.5f seconds", time.time() - baseline_time)
 
-    ######################################  Perform DUCI ######################################
+    # Perform the privacy audit
     baseline_time = time.time()
-    target_model_indices = list(
-        range(2 * (num_experiments + 1))
-    )  # Each run uses one model as target model
-
-    ############################  Input your own reference model indices ############################
-    # Sample: construct reference models
-    reference_model_indices_all = []
-    for target_model_idx in target_model_indices:
-        paired_model_idx = (
-            target_model_idx + 1 if target_model_idx % 2 == 0 else target_model_idx - 1
-        )
-        # Select reference models from non-target and non-paired model indices
-        ref_indices = [
-            i
-            for i in range(signals.shape[1])
-            if i != target_model_idx and i != paired_model_idx
-        ][: 2 * num_reference_models]
-        reference_model_indices_all.append(np.array(ref_indices))
-
-    logger.info(f"Initiate DUCI for target models: {target_model_indices}")
-    args = {
-        "attack": "RMIA",
-        "dataset": configs["data"]["dataset"],  # TODO: have DUCI config
-        "model": configs["train"]["model_name"],
-        "offline_a": None,
-    }
-    # Initialize MIA instance
-    MIA_instance = MIA(logger)
-    DUCI_instance = DUCI(MIA_instance, logger, args)
-
-    logger.info(
-        "Collecting membership prediction for each sample in the target dataset on target models and reference models."
-    )
-    logger.info("Predicting the proportion of dataset usage on target models.")
-    duci_preds, true_proportions, errors = DUCI_instance.pred_proportions(
+    target_model_indices = list(range(num_experiments))
+    # Expand the membership_list to match the shape of the auditing dataset
+    mia_score_list, membership_list = audit_models_range(
+        f"{directories['report_dir']}/exp",
         target_model_indices,
-        reference_model_indices_all,
         signals,
         population_signals,
-        auditing_membership,
+        np.repeat(auditing_membership, configs["ramia"]["sample_size"], axis=1),
+        num_reference_models,
+        logger,
+        configs,
     )
 
     if len(target_model_indices) > 1:
-        logger.info("DUCI %0.1f seconds", time.time() - baseline_time)
-        logger.info(f"Average prediction errors: {np.mean(errors)}")
-        logger.info(f"All prediction errors: {errors}")
         logger.info(
-            f"Prediction details: DUCI predictions: {duci_preds}, True proportions: {true_proportions}"
+            "Auditing privacy risk took %0.1f seconds", time.time() - baseline_time
         )
 
-    # Visualize the results
-    # logger.info("Visualizing the results...")
-    # DUCI_instance.visualize_results(
-    #     duci_preds,
-    #     true_proportions,
-    #     target_model_indices,
-    #     directories["report_dir"],
-    #     logger
-    # )
+    # Get average audit results across all experiments
+    if len(target_model_indices) > 1:
+        get_average_audit_results(
+            directories["report_dir"], mia_score_list, membership_list, logger
+        )
+
+    logger.info("Total runtime: %0.5f seconds", time.time() - start_time)
 
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@ from sklearn.metrics import roc_curve
 import logging
 import time
 
-from modules.mia import MIA
+from privacy_meter.modules.mia import MIA
 
 
 class DUCI:

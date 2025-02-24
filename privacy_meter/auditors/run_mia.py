@@ -1,7 +1,6 @@
 """This file is the main entry point for running the privacy auditing tool."""
 
 import argparse
-import logging
 import math
 import pdb
 import time
@@ -11,11 +10,18 @@ import torch
 import yaml
 from torch.utils.data import Subset
 
-from audit import get_average_audit_results, audit_models_range, sample_auditing_dataset
-from dataset.range_dataset import RangeDataset, RangeSampler
-from get_signals import get_model_signals
-from models.utils import load_models, train_models, split_dataset_for_training
-from util import (
+from privacy_meter.audit import (
+    get_average_audit_results,
+    audit_models,
+    sample_auditing_dataset,
+)
+from privacy_meter.get_signals import get_model_signals
+from privacy_meter.models.utils import (
+    load_models,
+    train_models,
+    split_dataset_for_training,
+)
+from privacy_meter.util import (
     check_configs,
     setup_log,
     initialize_seeds,
@@ -56,7 +62,7 @@ def main():
     log_dir = configs["run"]["log_dir"]
     directories = {
         "log_dir": log_dir,
-        "report_dir": f"{log_dir}/report_ramia",
+        "report_dir": f"{log_dir}/report",
         "signal_dir": f"{log_dir}/signals",
         "data_dir": configs["data"]["data_dir"],
     }
@@ -66,7 +72,6 @@ def main():
     logger = setup_log(
         directories["report_dir"], "time_analysis", configs["run"]["time_log"]
     )
-    logging.getLogger("transformers.modeling_utils").setLevel(logging.ERROR)
 
     start_time = time.time()
 
@@ -97,19 +102,6 @@ def main():
         "Model loading/training took %0.1f seconds", time.time() - baseline_time
     )
 
-    # Creating the range dataset
-    logger.info("Creating range dataset.")
-    dataset = RangeDataset(
-        dataset,
-        RangeSampler(
-            range_fn=configs["ramia"]["range_function"],
-            sample_size=configs["ramia"]["sample_size"],
-            config=configs,
-        ),
-        configs,
-    )
-
-    # Subsampling the dataset for auditing
     auditing_dataset, auditing_membership = sample_auditing_dataset(
         configs, dataset, logger, memberships
     )
@@ -123,11 +115,8 @@ def main():
         ),
     )
 
-    logger.info("Range dataset has been created")
-
     # Generate signals (softmax outputs) for all models
     baseline_time = time.time()
-    # pdb.set_trace()
     signals = get_model_signals(models_list, auditing_dataset, configs, logger)
     population_signals = get_model_signals(
         models_list, population, configs, logger, is_population=True
@@ -137,13 +126,12 @@ def main():
     # Perform the privacy audit
     baseline_time = time.time()
     target_model_indices = list(range(num_experiments))
-    # Expand the membership_list to match the shape of the auditing dataset
-    mia_score_list, membership_list = audit_models_range(
+    mia_score_list, membership_list = audit_models(
         f"{directories['report_dir']}/exp",
         target_model_indices,
         signals,
         population_signals,
-        np.repeat(auditing_membership, configs["ramia"]["sample_size"], axis=1),
+        auditing_membership,
         num_reference_models,
         logger,
         configs,

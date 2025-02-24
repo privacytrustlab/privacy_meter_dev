@@ -32,7 +32,7 @@ flowchart LR
 
 ## Implementation Details
 ### Creating the range dataset
-The range dataset is created out of a "normal" dataset used to train models. Each range query is wrapped around each original training point with a range sampler, which is created from the specified range function and range size in the config file. The class definition of range dataset and sampler can be found in this [file](../dataset/range_dataset.py). We provide the initialization part below:
+The range dataset is created out of a "normal" dataset used to train models. Each range query is wrapped around each original training point with a range sampler, which is created from the specified range function and range size in the config file. The class definition of range dataset and sampler can be found in this [file](../privacy_meter/dataset/range_dataset.py). We provide the initialization part below:
 ```python
 class RangeDataset(Dataset):
     def __init__(self, dataset: Dataset, sampler: RangeSampler, config: dict):
@@ -45,7 +45,7 @@ The best suited scenario to use RaMIA is when the query set contains no exact ma
 
 
 ### Aggregating membership scores within each range
-In the [paper](https://arxiv.org/pdf/2408.05131), the aggregation method is to compute the trimmed means. We implement this [here](../modules/ramia/ramia_scores.py) with an additional averaging option, which can serve as a baseline for comparison. Given this modularity, other aggregation methods can be easily added. Here, we highlight the function that needs to be expanded if more aggregation functions need to be added.
+In the [paper](https://arxiv.org/pdf/2408.05131), the aggregation method is to compute the trimmed means. We implement this [here](../privacy_meter/modules/ramia/ramia_scores.py) with an additional averaging option, which can serve as a baseline for comparison. Given this modularity, other aggregation methods can be easily added. Here, we highlight the function that needs to be expanded if more aggregation functions need to be added.
 ```python
 def trim_mia_scores(
     mia_scores: np.ndarray, trim_ratio: float, trim_direction: str

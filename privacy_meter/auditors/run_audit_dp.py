@@ -2,23 +2,28 @@
 
 import argparse
 import math
-import pdb
 import time
 
-import numpy as np
 import torch
 import yaml
-from torch.utils.data import Subset
+import numpy as np
 
-from audit import get_average_audit_results, audit_models, sample_auditing_dataset
-from get_signals import get_model_signals
-from models.utils import load_models, train_models, split_dataset_for_training
-from util import (
+from privacy_meter.audit import (
+    get_average_audit_results,
+    audit_models,
+    get_all_dp_audit_results,
+    get_dp_audit_results_for_k_pos_k_neg,
+)
+from privacy_meter.get_signals import get_model_signals
+from privacy_meter.models.utils import dp_load_models, train_models, dp_train_models
+from privacy_meter.util import (
     check_configs,
     setup_log,
     initialize_seeds,
     create_directories,
     load_dataset,
+    load_canary_dataset,
+    split_dataset_for_training_poisson,
 )
 
 # Enable benchmark mode in cudnn to improve performance when input sizes are consistent
@@ -67,9 +72,38 @@ def main():
 
     start_time = time.time()
 
-    # Load the dataset
+    # Load the canary dataset
     baseline_time = time.time()
-    dataset, population = load_dataset(configs, directories["data_dir"], logger)
+    if configs["dp_audit"].get("canary_dataset", "none") == "none":
+        dataset, population = load_dataset(configs, directories["data_dir"], logger)
+        canary_dataset = torch.utils.data.Subset(
+            dataset, np.arange(configs["dp_audit"]["canary_size"])
+        )
+    elif configs["dp_audit"].get("canary_dataset", "none") == "cifar10_canary":
+        canary_dataset, _ = load_canary_dataset(
+            configs, directories["data_dir"], logger
+        )
+        if configs["dp_audit"]["canary_size"] > len(canary_dataset):
+            raise ValueError(
+                "canary data size cannot be larger than the whole cifar10 dataset."
+            )
+        canary_dataset = torch.utils.data.Subset(
+            canary_dataset, np.arange(configs["dp_audit"]["canary_size"])
+        )
+        clean_dataset, population = load_dataset(
+            configs, directories["data_dir"], logger
+        )
+        # subsample clean dataset to ensure that the number of clean samples + the number of canary samples = size of the whole training dataset
+        clean_dataset = torch.utils.data.Subset(
+            clean_dataset,
+            np.arange(configs["dp_audit"]["canary_size"], len(clean_dataset)),
+        )
+        dataset = torch.utils.data.ConcatDataset([canary_dataset, clean_dataset])
+    else:
+        raise NotImplementedError(
+            f"canary dataset {configs['dp_audit']} is not supported"
+        )
+
     logger.info("Loading dataset took %0.5f seconds", time.time() - baseline_time)
 
     # Define experiment parameters
@@ -79,26 +113,32 @@ def main():
 
     # Load or train models
     baseline_time = time.time()
-    models_list, memberships = load_models(
+    models_list, memberships = dp_load_models(
         log_dir, dataset, num_model_pairs * 2, configs, logger
     )
     if models_list is None:
         # Split dataset for training two models per pair
-        data_splits, memberships = split_dataset_for_training(
+        data_splits, memberships = split_dataset_for_training_poisson(
             len(dataset), num_model_pairs
         )
-        models_list = train_models(
-            log_dir, dataset, data_splits, memberships, configs, logger
-        )
+        if configs["dp_audit"]["training_alg"] == "dp":
+            models_list = dp_train_models(
+                log_dir, dataset, data_splits, memberships, configs, logger
+            )
+        elif configs["dp_audit"]["training_alg"] == "nondp":
+            models_list = train_models(
+                log_dir, dataset, data_splits, memberships, configs, logger
+            )
     logger.info(
         "Model loading/training took %0.1f seconds", time.time() - baseline_time
     )
 
-    auditing_dataset, auditing_membership = sample_auditing_dataset(
-        configs, dataset, logger, memberships
+    auditing_dataset = canary_dataset
+    auditing_membership = memberships[:, : len(canary_dataset)].reshape(
+        (memberships.shape[0], len(canary_dataset))
     )
 
-    population = Subset(
+    population = torch.utils.data.Subset(
         population,
         np.random.choice(
             len(population),
@@ -128,6 +168,14 @@ def main():
         logger,
         configs,
     )
+
+    get_all_dp_audit_results(
+        directories["report_dir"], mia_score_list, membership_list, logger
+    )
+
+    # k_neg = 900
+    # k_pos = 59700
+    # get_dp_audit_results_for_k_pos_k_neg(directories["report_dir"], mia_score_list, membership_list, logger, k_pos, k_neg)
 
     if len(target_model_indices) > 1:
         logger.info(

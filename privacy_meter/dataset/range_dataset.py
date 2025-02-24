@@ -1,8 +1,7 @@
 import torch
 from torch.utils.data import Dataset
 from transformers import AutoTokenizer, AutoModelForMaskedLM
-
-from modules.ramia.range_samplers import *
+from privacy_meter.modules.ramia.range_samplers import *
 
 
 class RangeSampler:

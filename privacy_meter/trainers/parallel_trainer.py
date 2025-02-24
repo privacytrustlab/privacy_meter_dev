@@ -1,7 +1,6 @@
 """This module enables parallel training of models across multiple GPUs."""
 
 import torch
-import torch.cuda.amp as amp
 import torch.multiprocessing as mp
 from typing import List, Dict, Any
 import copy
@@ -10,10 +9,8 @@ import logging
 from pathlib import Path
 import json
 import numpy as np
-from tqdm import tqdm
-import sys
 from threading import Thread
-from models.utils import get_model
+from privacy_meter.models.utils import get_model
 
 
 def get_optimal_batch_size(gpu_type: str, base_batch_size: int) -> int:
@@ -60,9 +57,9 @@ def train_model_on_gpu(
     log_dir: str,
 ):
     """Train a single model on specified GPU"""
-    from models.utils import get_model
-    from dataset.utils import get_dataloader
-    from trainers.default_trainer import train, inference
+    from privacy_meter.models.utils import get_model
+    from privacy_meter.dataset.utils import get_dataloader
+    from privacy_meter.trainers.default_trainer import inference
 
     try:
         device = f"cuda:{gpu_id}"

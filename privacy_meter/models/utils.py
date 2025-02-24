@@ -13,10 +13,10 @@ import torch
 import torchvision
 from transformers import AutoModelForCausalLM
 
-from dataset.utils import get_dataloader
-from models import AlexNet, CNN, MLP, WideResNet
-from trainers.default_trainer import train, inference, dp_train
-from trainers.fast_train import (
+from privacy_meter.dataset.utils import get_dataloader
+from privacy_meter.models import AlexNet, CNN, MLP, WideResNet
+from privacy_meter.trainers.default_trainer import train, inference, dp_train
+from privacy_meter.trainers.fast_train import (
     load_cifar10_data,
     NetworkEMA,
     make_net,
@@ -24,7 +24,7 @@ from trainers.fast_train import (
     logging_columns_list,
     fast_train_fun,
 )
-from trainers.train_transformers import *
+from privacy_meter.trainers.train_transformers import *
 from peft import get_peft_model
 
 

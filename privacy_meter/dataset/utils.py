@@ -14,8 +14,8 @@ import torchvision.transforms as transforms
 from torch.utils.data import Dataset, DataLoader
 from transformers import AutoTokenizer
 
-from dataset import TabularDataset, TextDataset, load_agnews
-from trainers.fast_train import get_batches, load_cifar10_data
+from privacy_meter.dataset import TabularDataset, TextDataset, load_agnews
+from privacy_meter.trainers.fast_train import get_batches, load_cifar10_data
 
 
 class InfinitelyIndexableDataset(Dataset):
@@ -99,7 +99,7 @@ def get_dataset(dataset_name: str, data_dir: str, logger: Any, **kwargs: Any) ->
                 download=True,
                 transform=transform,
             )
-            labels = np.random.randint(10, size = len(all_data))
+            labels = np.random.randint(10, size=len(all_data))
             all_data.targets = labels.tolist()
             test_data = torchvision.datasets.CIFAR10(
                 root=path.replace("cifar10_canary", "cifar10"),

@@ -1,13 +1,15 @@
 # Privacy Meter
 
 ![PyPI - Python Version](https://img.shields.io/badge/python-3.12-blue)
+[![Downloads](https://static.pepy.tech/badge/privacy-meter)](https://pepy.tech/project/privacy-meter)
+[![PyPI version](https://img.shields.io/pypi/v/privacy-meter)](https://pypi.org/project/privacy-meter/)
 [<img src="https://img.shields.io/badge/slack-@privacy_meter-blue.svg?logo=slack">](https://join.slack.com/t/privacy-meter/shared_invite/zt-2t6881rtz-gNitEpoaO7MDU4wT3n7Gyw)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Citation](https://img.shields.io/badge/cite-citation-brightgreen)](https://arxiv.org/abs/2007.09339)
 ![Contributors](https://img.shields.io/github/contributors/privacytrustlab/ml_privacy_meter?color=dark-green)
 ![Forks](https://img.shields.io/github/forks/privacytrustlab/ml_privacy_meter?style=social)
 ![Stargazers](https://img.shields.io/github/stars/privacytrustlab/ml_privacy_meter?style=social)
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/demo.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/demo_notebooks/demo.ipynb)
 
 
 ## What is Privacy Meter?
@@ -46,7 +48,8 @@ The specific details of each inference attack and how to use them in Privacy Met
 </p>
 
 ## Installation Instructions
-To install the dependencies, run the following command:
+### From GitHub ![](https://img.shields.io/badge/GitHub-000?logo=github&logoColor=fff) (Recommended)
+You can directly clone this GitHub repository to your device. To install the dependencies, run the following command:
 ```
 pip install -r requirements.txt
 ```
@@ -56,8 +59,14 @@ conda env create -f env.yaml
 ```
 This should create a conda environment named `privacy_meter` and install all necessary libraries in it. If conda takes too much time (more than a few minutes) to solve the environment, we suggest updating the conda default solver by following this official [article](https://www.anaconda.com/blog/a-faster-conda-for-a-growing-community).
 
+### From PyPI ![](https://img.shields.io/badge/PyPI-2088FF?logo=pypi&logoColor=white)
+Privacy Meter is available as a package on PyPI. To install it from the PyPI version, do
+```
+pip install privacy-meter
+```
+
 ### Use Privacy Meter on cloud platforms
-If you want to use this tool on cloud platforms, the simplest way is to follow the instructions above to clone the code and install the environment. We additionally provide Jupyter notebooks for auditing with [mia](demo.ipynb), [ramia](demo_ramia.ipynb) or [duci](demo_duci.ipynb), which can be run with the cloud computing resources from Google once uploaded to Colab ![Google Colab](https://img.shields.io/badge/Google_Colab-F9AB00?style=plastic&logo=google-colab&logoColor=white). For a quick start, you can follow this [link](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/demo.ipynb) to do a demo run of the auditing using MIA. 
+If you want to use this tool on cloud platforms, the simplest way is to follow the instructions above to clone the code and install the environment. We additionally provide Jupyter notebooks for auditing with [mia](demo_notebooks/demo.ipynb), [ramia](demo_notebooks/demo_ramia.ipynb) or [duci](demo_notebooks/demo_duci.ipynb), which can be run with the cloud computing resources from Google once uploaded to Colab ![Google Colab](https://img.shields.io/badge/Google_Colab-F9AB00?style=plastic&logo=google-colab&logoColor=white). For a quick start, you can follow this [link](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/demo_notebooks/demo.ipynb) to do a demo run of the auditing using MIA. 
 
 If you prefer to use it on AWS ![AWS](https://img.shields.io/badge/AWS-232F3E?style=flat&logo=amazonwebservices&logoColor=white), please refer to the instructions [here](documentation/cloudformation.md). This document explains how to use multiple graphics cards (GPUs) at the same time to speed up the training process.
 
@@ -76,7 +85,7 @@ For other datasets, you can simply modify the `get_dataset` function in `/datase
 
 #### Attacking other transformers
 
-To attack other transformers from Huggingface's `transformers` library, you need to modify `/models/utils.py` to include the new model in the `get_model` function.  If you want to use different training pipelines, you can modify `/trainers/train_transformer.py` accordingly. You can also use other PEFT methods in the same file if you want to use more than LoRA.
+To attack other transformers from Hugging Face's `transformers` library, you need to modify `/models/utils.py` to include the new model in the `get_model` function.  If you want to use different training pipelines, you can modify `/trainers/train_transformer.py` accordingly. You can also use other PEFT methods in the same file if you want to use more than LoRA.
 
 For other Pytorch models, you can create a new model architecture in `/models/` and modify the `get_model` function in `/models/utils.py` to include the new model.
 
