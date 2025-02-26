@@ -14,8 +14,9 @@ from privacy_meter.audit import (
     get_all_dp_audit_results,
     get_dp_audit_results_for_k_pos_k_neg,
 )
+
 from privacy_meter.get_signals import get_model_signals
-from privacy_meter.models.utils import dp_load_models, train_models, dp_train_models
+from privacy_meter.models.utils import load_models, dp_load_models, train_models, dp_train_models
 from privacy_meter.util import (
     check_configs,
     setup_log,
@@ -113,9 +114,14 @@ def main():
 
     # Load or train models
     baseline_time = time.time()
-    models_list, memberships = dp_load_models(
-        log_dir, dataset, num_model_pairs * 2, configs, logger
-    )
+    if configs["dp_audit"]["training_alg"] == "dp":
+        models_list, memberships = dp_load_models(
+            log_dir, dataset, num_model_pairs * 2, configs, logger
+        )
+    else:
+        models_list, memberships = load_models(
+            log_dir, dataset, num_model_pairs * 2, configs, logger
+        )
     if models_list is None:
         # Split dataset for training two models per pair
         data_splits, memberships = split_dataset_for_training_poisson(
