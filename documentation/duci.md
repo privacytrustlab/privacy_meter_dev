@@ -54,9 +54,18 @@ flowchart LR
 To run a DUCI on a target model using 50% of the target dataset, you can use the following command
 
 ```
+python privacy_meter/auditors/run_duci.py --cf configs/duci/cifar10.yaml
+```
+If you installed from PyPI ![](https://img.shields.io/badge/PyPI-2088FF?logo=pypi&logoColor=white), you can use the following command to run the example:
+```python
+import sys
+import privacy_meter.auditors.run_duci as run_duci
 
-python run_duci.py --cf configs/config_duci.yaml
+# Simulate command-line arguments to include the custom --cf flag.
+sys.argv = ["", "--cf", "configs/duci/cifar10.yaml"]
 
+# Now call the main function.
+run_duci.main()
 ```
 
 You can load your own `signals` (a matrix of shape `dataset_size × total_num_models`) and `memberships` (with the same shape) for inference. For each run, you can specify which model among the `total_num_models` will be the target model and which models will serve as reference models. You can then launch the DUCI process as shown below:

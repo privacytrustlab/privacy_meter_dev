@@ -119,12 +119,25 @@ flowchart LR
 To run our demo, you can use the following command
 
 ```
-python run_mia.py --cf configs/config.yaml
+python privacy_meter/auditors/run_mia.py --cf configs/config.yaml
 ```
 
 The `.yaml` file allows you to specify the hyperparameters for training the model, and the details of the membership inference attack. To shorten the time to run the demo, we set the number of epochs to 10. To properly audit the privacy risk, we suggest change the number of epochs to 100 or whatever is appropriate for your use case.
 
 For a comprehensive explanation of each parameter, please refer to each `.yaml` file and the explanation [here](../configs/README.md). You can also refer to the [demo notebook](../demo_notebooks/demo.ipynb) for a step-by-step walkthrough. 
+
+If Privacy Meter is installed via PyPI ![](https://img.shields.io/badge/PyPI-2088FF?logo=pypi&logoColor=white), use the following code snippet as a starting point:
+```python
+import sys
+import privacy_meter.auditors.run_mia as run_mia
+
+# Simulate command-line arguments to include the custom --cf flag.
+sys.argv = ["", "--cf", "config.yaml"]
+
+# Now call the main function.
+run_mia.main()
+```
+You can change the `"config.yaml` to point to your own configuration file.
 
 ## Auditing Results
 Upon audit completion, you will find the results in the `demo` folder, with the attack results saved in `demo/report`. Furthermore, we also offer a timing log for each run, which can be found in the file `log_time_analysis.log`. We recommend running each new set of experiments with different hyperparameters under a different `log_dir` to avoid misusing old trained models or losing previous results.

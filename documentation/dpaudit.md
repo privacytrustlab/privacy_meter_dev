@@ -51,7 +51,17 @@ python run_audit_dp.py --cf configs/dpaudit/cifar10_dp_train_mislabel_1000.yaml
 python run_audit_dp.py --cf configs/dpaudit/cifar10_nondp_train_natural_1000.yaml
 python run_audit_dp.py --cf configs/dpaudit/cifar10_dp_train_natural_1000.yaml
 ```
+If you installed Privacy Meter directly from PyPI ![](https://img.shields.io/badge/PyPI-2088FF?logo=pypi&logoColor=white), you can use the following command to run the example:
+```python
+import sys
+import privacy_meter.auditors.run_audit_dp as run_audit_dp
 
+# Simulate command-line arguments to include the custom --cf flag.
+sys.argv = ["", "--cf", "configs/dpaudit/cifar10_nondp_train_mislabel_1000.yaml"]
+
+# Now call the main function.
+run_audit_dp.main()
+```
 
 
 ## Estimated Running Time
