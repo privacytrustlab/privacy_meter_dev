@@ -64,6 +64,11 @@ Privacy Meter is available as a package on PyPI. To install it from the PyPI ver
 ```
 pip install privacy-meter
 ```
+This will install Privacy Meter and all of its dependencies besides PyTorch, which we need to specify the wheel with a CUDA version. To install the PyTorch suites, do 
+```
+pip install privacy-meter[pytorch-cu118] --extra-index-url https://download.pytorch.org/whl/cu118
+```
+This should install the torch related packages with the right cuda version.
 
 ### Use Privacy Meter on cloud platforms
 If you want to use this tool on cloud platforms, the simplest way is to follow the instructions above to clone the code and install the environment. We additionally provide Jupyter notebooks for auditing with [mia](demo_notebooks/demo.ipynb), [ramia](demo_notebooks/demo_ramia.ipynb) or [duci](demo_notebooks/demo_duci.ipynb), which can be run with the cloud computing resources from Google once uploaded to Colab ![Google Colab](https://img.shields.io/badge/Google_Colab-F9AB00?style=plastic&logo=google-colab&logoColor=white). For a quick start, you can follow this [link](https://colab.research.google.com/github/privacytrustlab/ml_privacy_meter/blob/master/demo_notebooks/demo.ipynb) to do a demo run of the auditing using MIA. 

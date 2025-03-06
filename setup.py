@@ -18,8 +18,15 @@ try:
 except FileNotFoundError:
     long_description = DESCRIPTION
 
+
 with open("requirements.txt") as f:
-    requirements = f.read().splitlines()
+    requirements = [
+        line.strip()
+        for line in f.readlines()
+        if line
+        and not line.startswith("torch")
+        and not line.startswith("--extra-index-url")
+    ]
 
 setup(
     name="Privacy-Meter",
@@ -27,7 +34,6 @@ setup(
     description=DESCRIPTION,
     long_description=long_description,
     long_description_content_type="text/markdown",
-    # change to the privacy_meter when the repo is renamed
     url="https://github.com/privacytrustlab/ml_privacy_meter",
     author="Reza Shokri",
     author_email="reza@comp.nus.edu.sg",
@@ -37,6 +43,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=requirements,
+    extras_require={"pytorch-cu118": ["torch==2.4.1", "torchvision", "torchaudio"]},
     python_requires=">=3.12.0",
     classifiers=[
         "License :: OSI Approved :: MIT License",
