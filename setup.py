@@ -29,7 +29,7 @@ with open("requirements.txt") as f:
     ]
 
 setup(
-    name="Privacy-Meter",
+    name="privacy-meter",
     version=version,
     description=DESCRIPTION,
     long_description=long_description,
