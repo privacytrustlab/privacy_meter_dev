@@ -25,6 +25,7 @@ with open("requirements.txt") as f:
         for line in f.readlines()
         if line
         and not line.startswith("torch")
+        and not line.startswith("nvidia")
         and not line.startswith("--extra-index-url")
     ]
 
