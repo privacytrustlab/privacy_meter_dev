@@ -11,7 +11,7 @@ import torch.utils.data
 from sklearn.metrics import roc_curve, auc
 from torch.utils.data import Subset
 
-from attacks import tune_offline_a, run_rmia, run_loss
+from attacks import tune_offline_a, run_rmia, run_loss, run_mia_bits
 from modules.ramia.ramia_scores import get_topk, get_bottomk, trim_mia_scores
 from visualize import plot_roc, plot_roc_log, plot_eps_vs_num_guesses
 
@@ -194,6 +194,24 @@ def audit_models(
             )
         elif configs["audit"]["algorithm"] == "LOSS":
             mia_scores = run_loss(all_signals[:, target_model_idx])
+        elif configs["audit"]["algorithm"] == "RMIA_BITS":
+            offline_a = tune_offline_a(
+                target_model_idx,
+                all_signals,
+                population_signals,
+                all_memberships,
+                logger,
+                run_mia_bits,
+            )[0]
+            logger.info(f"The best offline_a is %0.1f", offline_a)
+            mia_scores = run_mia_bits(
+                target_model_idx,
+                all_signals,
+                population_signals,
+                all_memberships,
+                num_reference_models,
+                offline_a,
+            )
         else:
             raise NotImplementedError(
                 f"{configs['audit']['algorithm']} is not implemented"
